@@ -9,6 +9,7 @@ Thumbs.db
 
 # Video/build outputs
 *.mp4
+!showcase-video.mp4
 *.mov
 *.webm
 *.gif

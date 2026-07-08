@@ -1,622 +1,260 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Video Prompting — What We Can Make</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#000;overflow:hidden;width:100vw;height:100vh;font-family:system-ui,-apple-system,sans-serif}
-#stage-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
-#stage{position:relative;width:1280px;height:720px;overflow:hidden;transform-origin:center center}
-#controls{position:fixed;bottom:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 20px;background:linear-gradient(transparent,rgba(0,0,0,0.88));z-index:999;transition:opacity 0.4s}
-#controls.hidden{opacity:0;pointer-events:none}
-#play-btn,#fs-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;cursor:pointer;padding:6px 14px;font-size:15px;transition:background .2s}
-#play-btn:hover,#fs-btn:hover{background:rgba(255,255,255,0.22)}
-#seek{flex:1;accent-color:#4FC3F7;cursor:pointer;height:4px}
-#time-disp{color:rgba(255,255,255,0.55);font:12px/1 monospace;min-width:74px}
-#root{position:absolute;inset:0}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A 96-second showcase of what the Video Prompting kit can help teams plan and create.">
+  <title>Video Prompting Showcase</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #060810;
+      --panel: #101622;
+      --line: rgba(255,255,255,.12);
+      --text: #f6f7fb;
+      --muted: #a8b3c7;
+      --accent: #4fc3f7;
+      --accent-2: #f45bd7;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(79,195,247,.22), transparent 34rem),
+        radial-gradient(circle at 84% 8%, rgba(244,91,215,.18), transparent 30rem),
+        linear-gradient(135deg, #060810 0%, #0d1220 52%, #070812 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    a { color: inherit; }
+
+    .page {
+      width: min(1180px, calc(100vw - 40px));
+      margin: 0 auto;
+      padding: 34px 0 46px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+
+    .mark {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #06101c;
+      font-weight: 950;
+      box-shadow: 0 14px 40px rgba(79,195,247,.24);
+    }
+
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      background: rgba(255,255,255,.05);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 28px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 840px;
+      font-size: clamp(40px, 7vw, 82px);
+      line-height: .92;
+      letter-spacing: -.04em;
+    }
+
+    .lead {
+      margin: 22px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: clamp(17px, 2vw, 22px);
+      line-height: 1.45;
+    }
+
+    .stats {
+      display: grid;
+      gap: 12px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+      background: rgba(255,255,255,.06);
+      box-shadow: 0 18px 60px rgba(0,0,0,.24);
+    }
+
+    .stat strong {
+      display: block;
+      color: var(--text);
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .stat span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .video-shell {
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 22px;
+      background: #000;
+      box-shadow: 0 30px 100px rgba(0,0,0,.44);
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+
+    .caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 18px;
+      border-top: 1px solid rgba(255,255,255,.1);
+      background: rgba(16,22,34,.92);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .caption strong { color: var(--text); }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+
+    .note {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255,255,255,.055);
+    }
+
+    .note h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .note p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 860px) {
+      .hero,
+      .notes {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .caption {
+        flex-direction: column;
+      }
+    }
+  </style>
 </head>
 <body>
-<div id="stage-wrap"><div id="stage"><div id="root"></div></div></div>
-<div id="controls">
-  <button id="play-btn">⏸</button>
-  <input type="range" id="seek" min="0" max="96" step="0.05" value="0">
-  <span id="time-disp">0:00 / 1:36</span>
-  <button id="fs-btn">⛶</button>
-</div>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script type="text/babel">
-const {useState,useEffect,useRef} = React;
-const W=1280,H=720,DUR=96;
-
-// ─── Easing & math helpers ────────────────────────────────────────────────────
-const c01 = t => Math.max(0,Math.min(1,t));
-const ss  = t => { t=c01(t); return t*t*t*(t*(t*6-15)+10); };
-const outC= t => 1-Math.pow(1-c01(t),3);
-const outB= t => { t=c01(t); return 1+2.8*Math.pow(t-1,3)+1.8*Math.pow(t-1,2); };
-const outEl=t => { t=c01(t); if(!t||t===1) return t; return Math.pow(2,-10*t)*Math.sin((t*10-.75)*Math.PI*2/3)+1; };
-const ioC = t => { t=c01(t); return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; };
-const lp  = (a,b,t) => a+(b-a)*t;
-const itp = (t,[i0,i1],[o0,o1],e=ss) => lp(o0,o1,e(c01((t-i0)/(i1-i0))));
-const env = (lt,t0,t1,t2,t3) => {
-  if(lt<t0) return 0;
-  if(lt<t1) return ss((lt-t0)/(t1-t0));
-  if(lt<t2) return 1;
-  if(lt<t3) return 1-ss((lt-t2)/(t3-t2));
-  return 0;
-};
-
-// ─── Scene timeline ───────────────────────────────────────────────────────────
-const SCENES = [
-  {id:'ignition',   dur:8 },
-  {id:'twod',       dur:14},
-  {id:'present',    dur:12},
-  {id:'threed',     dur:14},
-  {id:'typo',       dur:12},
-  {id:'spectrum',   dur:12},
-  {id:'prompts',    dur:14},
-  {id:'outro',      dur:10},
-];
-const STARTS = SCENES.reduce((a,s,i) => { a.push(i?a[i-1]+SCENES[i-1].dur:0); return a; },[]);
-
-// ─── Stage root ───────────────────────────────────────────────────────────────
-function Stage() {
-  const [t,setT]   = useState(0);
-  const tRef       = useRef(0);
-  const playRef    = useRef(true);
-  const lastRef    = useRef(null);
-  const rafRef     = useRef(null);
-
-  // Master RAF loop
-  useEffect(() => {
-    const tick = now => {
-      if (playRef.current) {
-        const dt = lastRef.current ? (now-lastRef.current)/1000 : 0;
-        lastRef.current = now;
-        tRef.current = Math.min(tRef.current+dt, DUR);
-        setT(tRef.current);
-      } else {
-        lastRef.current = null;
-      }
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
-  },[]);
-
-  // Controls wiring
-  useEffect(() => {
-    const seek   = document.getElementById('seek');
-    const pBtn   = document.getElementById('play-btn');
-    const td     = document.getElementById('time-disp');
-    const fsBtn  = document.getElementById('fs-btn');
-    const ctrl   = document.getElementById('controls');
-
-    seek.value = t;
-    const m=Math.floor(t/60), s=Math.floor(t%60);
-    td.textContent = `${m}:${s.toString().padStart(2,'0')} / 1:36`;
-    pBtn.textContent = playRef.current ? '⏸' : '▶';
-
-    const togglePlay = () => {
-      playRef.current = !playRef.current;
-      pBtn.textContent = playRef.current ? '⏸' : '▶';
-      if (playRef.current) lastRef.current = null;
-    };
-    const onSeek = e => { tRef.current=parseFloat(e.target.value); lastRef.current=null; setT(tRef.current); };
-    const onFS   = () => { const w=document.getElementById('stage-wrap'); document.fullscreenElement?document.exitFullscreen():w.requestFullscreen(); };
-    const onKey  = e => { if(e.code==='Space'){e.preventDefault();togglePlay();} if(e.code==='KeyF') onFS(); };
-
-    let hideTimer;
-    const showCtrl = () => { ctrl.classList.remove('hidden'); clearTimeout(hideTimer); hideTimer=setTimeout(()=>ctrl.classList.add('hidden'),3000); };
-    window.addEventListener('mousemove', showCtrl); showCtrl();
-
-    seek.addEventListener('input',onSeek);
-    pBtn.addEventListener('click',togglePlay);
-    fsBtn.addEventListener('click',onFS);
-    document.addEventListener('keydown',onKey);
-    return () => {
-      seek.removeEventListener('input',onSeek);
-      pBtn.removeEventListener('click',togglePlay);
-      fsBtn.removeEventListener('click',onFS);
-      document.removeEventListener('keydown',onKey);
-      window.removeEventListener('mousemove',showCtrl);
-      clearTimeout(hideTimer);
-    };
-  },[t]);
-
-  // Viewport scaling
-  useEffect(() => {
-    const resize = () => {
-      const s = document.getElementById('stage');
-      if(s) s.style.transform = `scale(${Math.min(window.innerWidth/W, window.innerHeight/H)})`;
-    };
-    resize();
-    window.addEventListener('resize',resize);
-    return () => window.removeEventListener('resize',resize);
-  },[]);
-
-  const PAD = 0.8;
-  const active = SCENES.map((sc,i) => {
-    const start=STARTS[i], end=start+sc.dur;
-    if(t>=start-PAD && t<=end+PAD) return {...sc, i, start, end, lt:t-start};
-    return null;
-  }).filter(Boolean);
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'#000',overflow:'hidden'}}>
-      {active.map(sc => {
-        const fi=c01((t-sc.start)/PAD), fo=c01((sc.end+PAD-t)/PAD);
-        return (
-          <div key={sc.i} style={{position:'absolute',inset:0,opacity:Math.min(fi,fo)}}>
-            <SceneRouter sc={sc}/>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function SceneRouter({sc}) {
-  const p = {lt:sc.lt, dur:sc.dur};
-  switch(sc.id) {
-    case 'ignition':  return <SIgnition  {...p}/>;
-    case 'twod':      return <STwoD      {...p}/>;
-    case 'present':   return <SPresent   {...p}/>;
-    case 'threed':    return <SThreeD    {...p}/>;
-    case 'typo':      return <STypo      {...p}/>;
-    case 'spectrum':  return <SSpectrum  {...p}/>;
-    case 'prompts':   return <SPrompts   {...p}/>;
-    case 'outro':     return <SOutro     {...p}/>;
-    default: return null;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 0 — IGNITION
-// ═══════════════════════════════════════════════════════════════════════════════
-function SIgnition({lt}) {
-  const hue   = (lt * 18) % 360;
-  const ringS = itp(lt,[.3,2.2],[0,4.5],outC);
-  const ringO = lt<.3 ? 0 : itp(lt,[.3,2.2],[.9,0]);
-  const vidX  = itp(lt,[.7,2.1],[-520,0],outB);
-  const prmX  = itp(lt,[1.0,2.4],[520,0],outB);
-  const titleO= env(lt,.7,2.4,6.2,7.8);
-  const subO  = env(lt,2.8,3.8,6.2,7.8);
-  const subY  = itp(lt,[2.8,3.8],[32,0],outC);
-
-  const PCOLS = ['#4FC3F7','#FF4081','#76FF03','#FFD740','#7C4DFF','#18FFFF','#FF6D00','#fff'];
-  const pts   = Array.from({length:30},(_,i)=>{
-    const a=(i/30)*Math.PI*2, spd=150+(i%5)*50, dl=.3+(i%6)*.07;
-    const r = lt>dl ? itp(lt-dl,[0,1.8],[0,spd],outC) : 0;
-    return {x:Math.cos(a)*r, y:Math.sin(a)*r, c:PCOLS[i%8], o:env(lt,dl,dl+.4,dl+2,dl+3.5)};
-  });
-
-  return (
-    <div style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at 50% 50%,hsl(${hue},35%,9%) 0%,#000 70%)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-      {/* Shockwave */}
-      <div style={{position:'absolute',left:'50%',top:'50%',width:200,height:200,border:'2px solid rgba(79,195,247,.75)',borderRadius:'50%',transform:`translate(-50%,-50%) scale(${ringS})`,opacity:ringO,boxShadow:'0 0 60px rgba(79,195,247,.3)'}}/>
-      {/* Particles */}
-      {pts.map((p,i)=>(
-        <div key={i} style={{position:'absolute',left:'50%',top:'50%',width:5,height:5,borderRadius:'50%',background:p.c,transform:`translate(calc(-50% + ${p.x}px),calc(-50% + ${p.y}px))`,opacity:p.o,boxShadow:`0 0 12px ${p.c}`}}/>
-      ))}
-      {/* Title */}
-      <div style={{position:'relative',textAlign:'center',opacity:titleO,zIndex:2}}>
-        <div style={{display:'flex',alignItems:'baseline',gap:24,justifyContent:'center'}}>
-          <span style={{fontSize:102,fontWeight:900,letterSpacing:-3,color:'#fff',display:'inline-block',transform:`translateX(${vidX}px)`,textShadow:'0 0 80px rgba(79,195,247,.65)'}}>VIDEO</span>
-          <span style={{fontSize:102,fontWeight:900,letterSpacing:-3,color:'#4FC3F7',display:'inline-block',transform:`translateX(${prmX}px)`,textShadow:'0 0 80px #4FC3F7'}}>PROMPTING</span>
-        </div>
-        <div style={{fontSize:22,color:'rgba(255,255,255,.72)',letterSpacing:8,fontWeight:300,marginTop:20,opacity:subO,transform:`translateY(${subY}px)`,textTransform:'uppercase'}}>
-          What Can AI Actually Make?
-        </div>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="mark">VP</div>
+        <span>Video Prompting</span>
       </div>
-      {/* Scanlines */}
-      <div style={{position:'absolute',inset:0,backgroundImage:'repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px)',pointerEvents:'none'}}/>
-    </div>
-  );
-}
+      <a class="repo-link" href="https://github.com/GurneyK/Video-prompting">Open the GitHub kit</a>
+    </header>
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 1 — 2D ANIMATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-function STwoD({lt}) {
-  const titleO = env(lt,0,1.2,12,13.5);
-  const titleX = itp(lt,[0,1.2],[-260,0],outB);
-  const blobO  = env(lt,1,2.2,12,13.5);
-  const blobS  = itp(lt,[1,2.2],[0,1],outB);
-  // Organic blob via border-radius
-  const br = (off,amp) => (40+amp*Math.sin(lt*.65+off)).toFixed(1)+'%';
-  const blobRadius = `${br(0,22)} ${br(1,18)} ${br(2,25)} ${br(3,20)} / ${br(4,20)} ${br(5,24)} ${br(6,18)} ${br(7,22)}`;
-  const blobHue = (lt*28)%360;
-
-  const DCOLS = ['#4FC3F7','#FF4081','#76FF03','#FFD740','#7C4DFF','#18FFFF','#FF6D00','#fff'];
-  const dots = Array.from({length:8},(_,i)=>{
-    const dl=3.2+i*.18, lt2=lt-dl;
-    const bounceY = lt2>0 ? Math.abs(Math.sin(lt2*2.8))*itp(lt2,[0,2.2],[190,55],outC) : 200;
-    return {x:115+i*145, y:570-bounceY, c:DCOLS[i], o:env(lt,dl,dl+.5,12,13.5)};
-  });
-
-  const lineP = itp(lt,[5.5,9.2],[0,1],outC);
-  const lineO = env(lt,5.5,6.2,12,13.5);
-  const pathD = `M 70 655 C 280 545 460 680 640 610 C 820 540 1000 670 1210 590`;
-  const pathLen = 1380;
-
-  const labels = ['MORPHS','BOUNCES','PATHS','REVEALS','LOOPS'];
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#0c1a28 0%,#081d38 100%)',overflow:'hidden'}}>
-      {/* Title */}
-      <div style={{position:'absolute',top:55,left:80,fontSize:54,fontWeight:800,color:'#fff',transform:`translateX(${titleX}px)`,opacity:titleO,letterSpacing:-1}}>
-        2D <span style={{color:'#4FC3F7'}}>ANIMATIONS</span>
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <h1 id="title">See what the video prompting kit can help teams make.</h1>
+        <p class="lead">
+          A 96-second showcase for ads, product demos, animated presentations, motion concepts,
+          GIF loops, and web-native HTML video teasers.
+        </p>
       </div>
-      {/* Morphing blob */}
-      <div style={{position:'absolute',left:640,top:310,width:240,height:240,transform:`translate(-50%,-50%) scale(${blobS})`,opacity:blobO,borderRadius:blobRadius,background:`conic-gradient(from ${lt*38}deg,#4FC3F7,#7C4DFF,#FF4081,#FFD740,#4FC3F7)`,filter:'drop-shadow(0 0 45px rgba(79,195,247,.5))'}}>
-        <div style={{position:'absolute',inset:5,borderRadius:'inherit',background:'rgba(10,20,40,.32)'}}/>
+      <aside class="stats" aria-label="Showcase details">
+        <div class="stat"><strong>1:36</strong><span>Runtime, designed as a quick example for the repo.</span></div>
+        <div class="stat"><strong>1280 x 720</strong><span>H.264 MP4, hosted directly with GitHub Pages.</span></div>
+        <div class="stat"><strong>No audio</strong><span>Safe for autoplay-muted contexts and team browsing.</span></div>
+      </aside>
+    </section>
+
+    <section class="video-shell" aria-label="Video showcase player">
+      <video controls playsinline preload="metadata" poster="showcase-poster.jpg">
+        <source src="showcase-video.mp4" type="video/mp4">
+        Your browser cannot play this video. Download it here:
+        <a href="showcase-video.mp4">showcase-video.mp4</a>.
+      </video>
+      <div class="caption">
+        <span><strong>Showcase video:</strong> a concrete example of the kinds of motion ideas this repo helps users prompt, plan, and build.</span>
+        <a href="showcase-video.mp4" download>Download MP4</a>
       </div>
-      <div style={{position:'absolute',left:640,top:455,transform:'translateX(-50%)',fontSize:12,color:'rgba(79,195,247,.8)',letterSpacing:4,textTransform:'uppercase',opacity:blobO*.9,fontWeight:600}}>
-        Live Morphing Shape
-      </div>
-      {/* Bouncing dots */}
-      {dots.map((d,i)=>(
-        <div key={i} style={{position:'absolute',left:d.x,top:d.y,width:36,height:36,borderRadius:'50%',background:d.c,transform:'translate(-50%,-50%)',opacity:d.o,boxShadow:`0 0 22px ${d.c},0 0 50px ${d.c}44`}}/>
-      ))}
-      {/* Path draw */}
-      <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:lineO}} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
-        <defs><filter id="g2d"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-        <path d={pathD} fill="none" stroke="#18FFFF" strokeWidth="3.5" strokeDasharray={pathLen} strokeDashoffset={pathLen*(1-lineP)} filter="url(#g2d)" strokeLinecap="round"/>
-      </svg>
-      {/* Labels */}
-      <div style={{position:'absolute',bottom:50,left:0,right:0,display:'flex',justifyContent:'center',gap:40}}>
-        {labels.map((l,i)=>{
-          const dl=9+i*.3, o=env(lt,dl,dl+.5,13,14), y=itp(lt,[dl,dl+.5],[18,0],outB);
-          return <div key={i} style={{fontSize:12,fontWeight:700,letterSpacing:3,color:'rgba(255,255,255,.5)',opacity:o,transform:`translateY(${y}px)`,textTransform:'uppercase',borderTop:`2px solid ${DCOLS[i]}`,paddingTop:8}}>{l}</div>;
-        })}
-      </div>
-    </div>
-  );
-}
+    </section>
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 2 — ANIMATED PRESENTATIONS
-// ═══════════════════════════════════════════════════════════════════════════════
-function SPresent({lt}) {
-  const frameO = env(lt,.4,1.6,10.5,12);
-  const frameS = itp(lt,[.4,1.6],[.86,1],outB);
-  const bars   = [{l:'Q1',v:.64,c:'#4FC3F7'},{l:'Q2',v:.88,c:'#18FFFF'},{l:'Q3',v:.52,c:'#7C4DFF'},{l:'Q4',v:.95,c:'#FF4081'},{l:'Q5',v:.73,c:'#FFD740'}];
-  const BH     = 195;
-  const bullets= ['✦  Animate any slide in seconds','✦  Auto-stagger text reveals','✦  Cinematic transitions','✦  Export-ready output'];
-  const slideN = Math.min(Math.floor(itp(lt,[8,11],[1,8])),7);
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'linear-gradient(160deg,#16213e 0%,#0f3460 100%)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-      <div style={{position:'absolute',top:52,left:0,right:0,textAlign:'center',fontSize:50,fontWeight:800,color:'#fff',opacity:env(lt,0,.9,10.5,12),letterSpacing:-1}}>
-        <span style={{color:'#4FC3F7'}}>ANIMATED</span> PRESENTATIONS
-      </div>
-      <div style={{width:960,height:500,border:'1px solid rgba(255,255,255,.12)',borderRadius:14,background:'rgba(255,255,255,.025)',backdropFilter:'blur(6px)',position:'relative',opacity:frameO,transform:`scale(${frameS})`,padding:'40px 48px',boxShadow:'0 40px 120px rgba(0,0,0,.55)',overflow:'hidden',marginTop:40}}>
-        <div style={{position:'absolute',top:0,left:0,right:0,height:4,background:'linear-gradient(90deg,#4FC3F7,#7C4DFF,#FF4081)'}}/>
-        <div style={{fontSize:30,fontWeight:800,color:'#fff',marginBottom:28,opacity:env(lt,.8,1.8,10,12),transform:`translateX(${itp(lt,[.8,1.8],[-40,0],outC)}px)`}}>
-          Results That <span style={{color:'#4FC3F7'}}>Move</span>
-        </div>
-        <div style={{display:'flex',gap:48}}>
-          {/* Bar chart */}
-          <div style={{flex:1,opacity:env(lt,2,2.6,10,12)}}>
-            <div style={{display:'flex',alignItems:'flex-end',gap:14,height:BH}}>
-              {bars.map((b,i)=>{
-                const dl=2.4+i*.22, h=itp(lt,[dl,dl+.9],[0,b.v*BH],outB);
-                return (
-                  <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
-                    <div style={{width:'100%',height:h,background:`linear-gradient(180deg,${b.c},${b.c}88)`,borderRadius:'5px 5px 0 0',boxShadow:`0 -4px 20px ${b.c}55`,position:'relative'}}>
-                      {h>22 && <div style={{position:'absolute',top:-20,left:'50%',transform:'translateX(-50%)',fontSize:11,color:b.c,fontWeight:700}}>{Math.round(b.v*100)}%</div>}
-                    </div>
-                    <span style={{fontSize:11,color:'rgba(255,255,255,.4)'}}>{b.l}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          {/* Bullet list */}
-          <div style={{flex:1,paddingTop:4}}>
-            {bullets.map((b,i)=>{
-              const dl=5.2+i*.45;
-              return <div key={i} style={{fontSize:15,color:'rgba(255,255,255,.85)',marginBottom:18,opacity:env(lt,dl,dl+.5,10,12),transform:`translateX(${itp(lt,[dl,dl+.5],[28,0],outC)}px)`,borderLeft:`2px solid ${['#4FC3F7','#FF4081','#76FF03','#FFD740'][i]}`,paddingLeft:12}}>{b}</div>;
-            })}
-          </div>
-        </div>
-        <div style={{position:'absolute',bottom:16,right:24,fontSize:12,color:'rgba(255,255,255,.22)',fontFamily:'monospace',opacity:env(lt,7.5,8.5,10,12)}}>Slide {slideN} of ∞</div>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 3 — 3D DIMENSION
-// ═══════════════════════════════════════════════════════════════════════════════
-function SThreeD({lt}) {
-  const cubeRY = lt*44;
-  const cubeRX = 18 + Math.sin(lt*.65)*12;
-  const cubeO  = env(lt,.8,2,12,14);
-  const cubeS  = itp(lt,[.8,2],[0,1],outB);
-  const SZ     = 155;
-
-  const faces = [
-    {t:`translateZ(${SZ/2}px)`,                       bg:'rgba(79,195,247,.85)',  l:'FRONT'},
-    {t:`translateZ(-${SZ/2}px) rotateY(180deg)`,      bg:'rgba(124,77,255,.85)',  l:'BACK'},
-    {t:`translateX(${SZ/2}px) rotateY(90deg)`,        bg:'rgba(255,64,129,.85)',  l:'RIGHT'},
-    {t:`translateX(-${SZ/2}px) rotateY(-90deg)`,      bg:'rgba(255,215,64,.85)',  l:'LEFT'},
-    {t:`translateY(-${SZ/2}px) rotateX(90deg)`,       bg:'rgba(24,255,255,.85)',  l:'TOP'},
-    {t:`translateY(${SZ/2}px) rotateX(-90deg)`,       bg:'rgba(118,255,3,.85)',   l:'BOTTOM'},
-  ];
-
-  const cards = [
-    {x:75, y:310,z:90, w:225,h:148,c:'#4FC3F7',dl:7},
-    {x:430,y:260,z:0,  w:265,h:168,c:'#7C4DFF',dl:8},
-    {x:825,y:305,z:-80,w:225,h:148,c:'#FF4081',dl:9},
-  ];
-
-  const gridO = env(lt,10,11.2,13,14);
-  const gridY = itp(lt,[10,11.5],[130,0],outC);
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg,#09041a 0%,#130928 100%)',overflow:'hidden'}}>
-      <div style={{position:'absolute',top:52,left:80,fontSize:54,fontWeight:800,color:'#fff',opacity:env(lt,0,.9,12.5,14),transform:`translateX(${itp(lt,[0,.9],[-220,0],outB)}px)`,textShadow:'0 0 50px #7C4DFF'}}>
-        3D <span style={{color:'#7C4DFF'}}>DIMENSION</span>
-      </div>
-
-      {/* CSS 3D Cube */}
-      <div style={{position:'absolute',left:'50%',top:'46%',transform:'translate(-50%,-50%)',opacity:cubeO}}>
-        <div style={{perspective:820,width:SZ,height:SZ,transform:`scale(${cubeS})`}}>
-          <div style={{width:SZ,height:SZ,position:'relative',transformStyle:'preserve-3d',transform:`rotateX(${cubeRX}deg) rotateY(${cubeRY}deg)`}}>
-            {faces.map((f,i)=>(
-              <div key={i} style={{position:'absolute',width:SZ,height:SZ,transform:f.t,background:f.bg,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(255,255,255,.28)',borderRadius:6,fontSize:12,fontWeight:800,color:'rgba(0,0,0,.6)',letterSpacing:2}}>
-                {f.l}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Floating depth cards */}
-      {cards.map((c,i)=>{
-        const scale = 1+c.z/900;
-        const floatY = Math.sin(lt*1.1+i*1.2)*7;
-        const o  = env(lt,c.dl,c.dl+.9,12.5,14);
-        const ox = itp(lt,[c.dl,c.dl+.9],[55,0],outB);
-        return (
-          <div key={i} style={{position:'absolute',left:c.x,top:c.y+floatY,width:c.w*scale,height:c.h*scale,background:'rgba(255,255,255,.04)',backdropFilter:'blur(14px)',border:`1px solid ${c.c}44`,borderRadius:14,opacity:o,transform:`translateX(${ox}px)`,padding:20,boxShadow:`0 20px 60px rgba(0,0,0,.5),0 0 60px ${c.c}18`}}>
-            <div style={{height:3,background:c.c,borderRadius:99,marginBottom:14,width:'50%',boxShadow:`0 0 10px ${c.c}`}}/>
-            <div style={{height:8,background:'rgba(255,255,255,.12)',borderRadius:4,marginBottom:8}}/>
-            <div style={{height:8,background:'rgba(255,255,255,.07)',borderRadius:4,marginBottom:8,width:'80%'}}/>
-            <div style={{height:8,background:'rgba(255,255,255,.04)',borderRadius:4,width:'58%'}}/>
-            <div style={{position:'absolute',top:16,right:16,fontSize:10,color:c.c,fontFamily:'monospace',letterSpacing:1}}>z {c.z>0?'+':''}{c.z}px</div>
-          </div>
-        );
-      })}
-
-      {/* Perspective grid floor */}
-      <div style={{position:'absolute',bottom:0,left:0,right:0,height:220,opacity:gridO,transform:`translateY(${gridY}px)`}}>
-        <svg viewBox="0 0 1280 220" preserveAspectRatio="none" style={{width:'100%',height:'100%'}}>
-          {Array.from({length:15},(_,i)=>{
-            const x=i*(1280/14);
-            return <line key={i} x1={x} y1={0} x2={640} y2={220} stroke="rgba(124,77,255,.35)" strokeWidth="1"/>;
-          })}
-          {Array.from({length:10},(_,i)=>{
-            const p=i/9, y=p*220, sp=p*640;
-            const a=Math.round(p*80).toString(16).padStart(2,'0');
-            return <line key={i} x1={640-sp} y1={y} x2={640+sp} y2={y} stroke={`#7C4DFF${a}`} strokeWidth="1"/>;
-          })}
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 4 — KINETIC TYPOGRAPHY
-// ═══════════════════════════════════════════════════════════════════════════════
-function STypo({lt}) {
-  const letters  = 'TYPOGRAPHY'.split('');
-  const boldO    = env(lt,2.5,3.2,8.5,10.5);
-  const boldS    = 1 + Math.sin(lt*3.5)*.14*c01((lt-2.5)/1.5);
-  const colorO   = env(lt,4.5,5.2,9.5,11.5);
-  const spacing  = itp(lt,[6.5,8],[0,70],ioC) - itp(lt,[8.8,10.2],[0,70],ioC);
-  const spacingO = env(lt,6.5,7.2,10.5,11.8);
-  const wO       = env(lt,8,8.8,11,12);
-  const weight   = Math.round(itp(lt,[8,11],[100,900],ioC));
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'#000',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
-      {/* TYPOGRAPHY letter drop */}
-      <div style={{position:'absolute',top:80,left:0,right:0,display:'flex',justifyContent:'center'}}>
-        {letters.map((ch,i)=>{
-          const dl=i*.075, y=itp(lt,[dl,dl+.55],[-190,0],outEl), o=env(lt,dl,dl+.55,11,12);
-          const h=(i/letters.length)*360+(lt*22)%360;
-          return <span key={i} style={{fontSize:112,fontWeight:900,color:`hsl(${h},85%,62%)`,display:'inline-block',transform:`translateY(${y}px)`,opacity:o,lineHeight:1,letterSpacing:-5,textShadow:`0 0 45px hsl(${h},85%,62%)`}}>{ch}</span>;
-        })}
-      </div>
-
-      {/* BOLD pulsing */}
-      <div style={{position:'absolute',top:225,fontSize:130,fontWeight:900,color:'#fff',transform:`scale(${boldS})`,opacity:boldO,letterSpacing:-6,textShadow:'0 0 100px rgba(255,255,255,.38)',userSelect:'none'}}>BOLD</div>
-
-      {/* COLOR cycling per-letter */}
-      <div style={{position:'absolute',top:332,display:'flex',gap:2,opacity:colorO}}>
-        {'COLOR'.split('').map((ch,i)=>{
-          const h=(i/5)*360+(lt*68)%360;
-          return <span key={i} style={{fontSize:118,fontWeight:900,color:`hsl(${h},100%,62%)`,textShadow:`0 0 55px hsl(${h},100%,62%)`,display:'inline-block',transform:`translateY(${Math.sin(lt*2.8+i*.9)*10}px) rotate(${Math.sin(lt*1.4+i)*.7}deg)`}}>{ch}</span>;
-        })}
-      </div>
-
-      {/* SPACING stretch */}
-      <div style={{position:'absolute',top:468,fontSize:68,fontWeight:700,color:'rgba(255,255,255,.9)',letterSpacing:spacing,opacity:spacingO,textTransform:'uppercase',whiteSpace:'nowrap',textShadow:'0 0 30px rgba(79,195,247,.35)'}}>SPACING</div>
-
-      {/* WEIGHT animate */}
-      <div style={{position:'absolute',top:560,fontSize:54,color:'#FFD740',fontWeight:weight,opacity:wO,letterSpacing:3,textShadow:'0 0 30px rgba(255,215,64,.45)'}}>WEIGHT — {weight}</div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 5 — SPECTRUM (Colors & Design)
-// ═══════════════════════════════════════════════════════════════════════════════
-function SSpectrum({lt}) {
-  const hue  = (lt*28)%360;
-  const orbR = itp(lt,[0,2.4],[0,340],outC);
-  const titleO = env(lt,0,.9,10.5,12);
-
-  const gcards = [
-    {x:90, y:245,w:255,h:162,c:'#4FC3F7',dl:2  },
-    {x:440,y:205,w:305,h:182,c:'#7C4DFF',dl:2.8},
-    {x:845,y:245,w:255,h:162,c:'#FF4081',dl:3.6},
-  ];
-  const swatches = ['#4FC3F7','#18FFFF','#7C4DFF','#FF4081','#FF6D00','#FFD740','#76FF03','#fff'];
-  const lineO = env(lt,5.5,6.2,10.5,12);
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'#04000e',overflow:'hidden'}}>
-      {/* Aurora layers */}
-      {[0,1,2].map(i=>{
-        const h=(hue+i*45)%360, y=180+i*65+Math.sin(lt*.4+i)*32;
-        return <div key={i} style={{position:'absolute',left:-80,right:-80,top:y,height:210,background:`radial-gradient(ellipse at 50% 50%,hsl(${h},100%,55%) 0%,transparent 70%)`,opacity:env(lt,0,1.5,10.5,12)*.16,filter:'blur(65px)',transform:`scaleY(${.48+Math.sin(lt*.28+i)*.2})`}}/>;
-      })}
-
-      {/* Gradient orb */}
-      <div style={{position:'absolute',left:'50%',top:'52%',width:orbR*2,height:orbR*2,transform:'translate(-50%,-50%)',borderRadius:'50%',background:`radial-gradient(circle,hsl(${hue},100%,65%) 0%,hsl(${(hue+130)%360},100%,50%) 45%,transparent 70%)`,opacity:.24,filter:'blur(55px)'}}/>
-
-      <div style={{position:'absolute',top:50,left:0,right:0,textAlign:'center',fontSize:52,fontWeight:800,color:'#fff',opacity:titleO,letterSpacing:-1}}>
-        COLORS &amp; <span style={{color:`hsl(${hue},100%,65%)`}}>DESIGN</span>
-      </div>
-
-      {/* Glass cards */}
-      {gcards.map((c,i)=>{
-        const o=env(lt,c.dl,c.dl+.8,10.5,12), y=itp(lt,[c.dl,c.dl+.8],[c.y+30,c.y],outB);
-        return (
-          <div key={i} style={{position:'absolute',left:c.x,top:y,width:c.w,height:c.h,background:'rgba(255,255,255,.05)',backdropFilter:'blur(24px)',border:`1px solid ${c.c}44`,borderRadius:18,opacity:o,padding:24,boxShadow:`0 8px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1),0 0 80px ${c.c}18`}}>
-            <div style={{width:44,height:44,borderRadius:10,background:c.c,marginBottom:14,boxShadow:`0 0 28px ${c.c}`}}/>
-            <div style={{height:8,background:'rgba(255,255,255,.15)',borderRadius:4,marginBottom:8}}/>
-            <div style={{height:8,background:'rgba(255,255,255,.08)',borderRadius:4,marginBottom:8,width:'74%'}}/>
-            <div style={{height:8,background:'rgba(255,255,255,.04)',borderRadius:4,width:'54%'}}/>
-          </div>
-        );
-      })}
-
-      {/* Neon line burst */}
-      <svg style={{position:'absolute',inset:0,width:'100%',height:'100%',opacity:lineO}} viewBox={`0 0 ${W} ${H}`}>
-        <defs><filter id="ng"><feGaussianBlur stdDeviation="3.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-        {Array.from({length:20},(_,i)=>{
-          const a=(i/20)*Math.PI*2, r1=70, r2=280;
-          const p=itp(lt,[5.5+i*.035,6.6+i*.035],[0,1],outC);
-          const cx=W/2, cy=H*.54;
-          const clr=`hsl(${(i/20)*360+(lt*38)},100%,65%)`;
-          return <line key={i} x1={cx+Math.cos(a)*r1} y1={cy+Math.sin(a)*r1} x2={cx+Math.cos(a)*lp(r1,r2,p)} y2={cy+Math.sin(a)*lp(r1,r2,p)} stroke={clr} strokeWidth="2.5" filter="url(#ng)"/>;
-        })}
-      </svg>
-
-      {/* Swatches */}
-      <div style={{position:'absolute',bottom:65,left:0,right:0,display:'flex',justifyContent:'center',gap:14}}>
-        {swatches.map((c,i)=>{
-          const dl=7.5+i*.12, o=env(lt,dl,dl+.45,11,12), s=itp(lt,[dl,dl+.45],[0,1],outEl);
-          return <div key={i} style={{width:46,height:46,borderRadius:10,background:c,opacity:o,transform:`scale(${s})`,boxShadow:`0 0 24px ${c},0 0 55px ${c}44`}}/>;
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 6 — PROMPT POWER
-// ═══════════════════════════════════════════════════════════════════════════════
-function SPrompts({lt}) {
-  const prompts = [
-    {text:'"Make a product demo video"',     c:'#4FC3F7',dl:1.5,col:0},
-    {text:'"Animate my presentation"',       c:'#7C4DFF',dl:3.5,col:1},
-    {text:'"Create a 2D motion graphic"',    c:'#FF4081',dl:5.5,col:0},
-    {text:'"Build a 3D rotating showcase"',  c:'#FFD740',dl:7.0,col:1},
-    {text:'"Kinetic typography intro"',      c:'#18FFFF',dl:8.2,col:0},
-    {text:'"Animated brand identity video"', c:'#76FF03',dl:9.4,col:1},
-  ];
-
-  const vT   = c01((lt-11)/3);
-  const bigO = itp(vT,[.42,.82],[0,1],ss);
-
-  return (
-    <div style={{position:'absolute',inset:0,background:'linear-gradient(135deg,#000f08 0%,#00091a 100%)',overflow:'hidden'}}>
-      <div style={{position:'absolute',top:48,left:0,right:0,textAlign:'center',fontSize:50,fontWeight:800,color:'#fff',opacity:env(lt,0,.9,12.5,14),letterSpacing:-1}}>
-        WHAT CAN YOU <span style={{color:'#76FF03'}}>ASK AI?</span>
-      </div>
-
-      {prompts.map((p,i)=>{
-        const o = env(lt,p.dl,p.dl+.7,12.5,14);
-        const xEnd = p.col===0 ? 105 : 590;
-        const xStart = p.col===0 ? -480 : W+180;
-        const y  = 150+Math.floor(i/2)*110;
-        const x  = itp(lt,[p.dl,p.dl+.7],[xStart,xEnd],outB);
-        const vortexA = (i/6)*Math.PI*2+vT*Math.PI*5;
-        const vortexR = lp(0,230,vT);
-        const vx = W/2+Math.cos(vortexA)*vortexR-(xEnd+170);
-        const finalX = lt>11 ? x+vx*vT : x;
-        const finalO = lt>11 ? o*(1-vT*.9) : o;
-        return (
-          <div key={i} style={{position:'absolute',top:y,left:finalX,background:'rgba(255,255,255,.06)',border:`1px solid ${p.c}55`,borderRadius:999,padding:'12px 24px',fontSize:16,color:'rgba(255,255,255,.9)',opacity:finalO,whiteSpace:'nowrap',boxShadow:`0 0 32px ${p.c}28`,backdropFilter:'blur(8px)'}}>
-            <span style={{color:p.c,marginRight:10,fontWeight:700}}>→</span>{p.text}
-          </div>
-        );
-      })}
-
-      {vT>.42 && (
-        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:10}}>
-          <div style={{fontSize:74,fontWeight:900,color:'#fff',opacity:bigO,textAlign:'center',textShadow:'0 0 90px #76FF03',letterSpacing:-4,lineHeight:1.08}}>
-            ANYTHING IS<br/><span style={{color:'#76FF03'}}>POSSIBLE</span>
-          </div>
-          <div style={{fontSize:16,color:'rgba(255,255,255,.38)',letterSpacing:5,textTransform:'uppercase',opacity:bigO,marginTop:16}}>
-            Just describe it. AI does the rest.
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SCENE 7 — OUTRO
-// ═══════════════════════════════════════════════════════════════════════════════
-function SOutro({lt}) {
-  const hue = (lt*24)%360;
-  const pts = Array.from({length:34},(_,i)=>{
-    const a=(i/34)*Math.PI*2, r=itp(lt,[0,2.8],[400,0],ioC);
-    return {x:W/2+Math.cos(a)*r, y:H/2+Math.sin(a)*r, c:`hsl(${(i/34)*360},100%,65%)`, s:4+(i%3)*3, o:env(lt,0,.5,2.8,4)};
-  });
-
-  return (
-    <div style={{position:'absolute',inset:0,background:`radial-gradient(ellipse at 50% 50%,hsl(${hue},38%,12%) 0%,#000 58%)`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
-      {pts.map((p,i)=>(
-        <div key={i} style={{position:'absolute',left:p.x,top:p.y,width:p.s,height:p.s,borderRadius:'50%',background:p.c,transform:'translate(-50%,-50%)',opacity:p.o,boxShadow:`0 0 14px ${p.c}`}}/>
-      ))}
-
-      {/* Halo ring */}
-      <div style={{position:'absolute',left:'50%',top:'50%',width:520,height:520,transform:'translate(-50%,-50%)',borderRadius:'50%',border:'1px solid rgba(255,255,255,.07)',boxShadow:`0 0 90px hsl(${hue},100%,55%)22`,opacity:env(lt,3,4.5,9,10)}}/>
-
-      <div style={{fontSize:13,letterSpacing:7,color:'rgba(255,255,255,.38)',textTransform:'uppercase',opacity:env(lt,2.2,3.2,9,10),marginBottom:10}}>Created by</div>
-      <div style={{fontSize:60,fontWeight:800,color:'#fff',opacity:env(lt,2.4,3.4,9,10),letterSpacing:-1,textShadow:'0 0 60px rgba(255,255,255,.22)',marginBottom:50}}>Gurnoor Kahlon</div>
-
-      <div style={{fontSize:90,fontWeight:900,color:'#fff',opacity:env(lt,4,5,9,10),letterSpacing:-4,textAlign:'center',lineHeight:1.05,marginBottom:36}}>
-        START<br/><span style={{color:`hsl(${hue},100%,65%)`,textShadow:`0 0 80px hsl(${hue},100%,65%)`}}>PROMPTING</span>
-      </div>
-
-      <div style={{fontSize:19,color:'rgba(255,255,255,.52)',fontFamily:'monospace',letterSpacing:2,opacity:env(lt,6,7,9,10),borderBottom:'1px solid rgba(255,255,255,.16)',paddingBottom:6,marginBottom:22}}>
-        github.com/GurneyK/Video-prompting
-      </div>
-
-      <div style={{fontSize:13,color:'rgba(255,255,255,.26)',letterSpacing:4,textTransform:'uppercase',opacity:env(lt,7.5,8.5,9,10)}}>
-        No limits. Just prompts.
-      </div>
-    </div>
-  );
-}
-
-// ─── Mount ────────────────────────────────────────────────────────────────────
-ReactDOM.createRoot(document.getElementById('root')).render(<Stage/>);
-</script>
+    <section class="notes" aria-label="How to use this example">
+      <article class="note">
+        <h2>Use It As A Reference</h2>
+        <p>Point users here before they write prompts so they understand the range of outcomes the kit supports.</p>
+      </article>
+      <article class="note">
+        <h2>Then Upload The Packet</h2>
+        <p>Start with AI_UPLOAD_PACKET.md and one template from the templates folder.</p>
+      </article>
+      <article class="note">
+        <h2>Storyboard First</h2>
+        <p>The repo is built to make AI tools plan the video before creating code, slides, or final prompts.</p>
+      </article>
+    </section>
+  </main>
 </body>
 </html>

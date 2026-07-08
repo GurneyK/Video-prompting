@@ -1,5 +1,10 @@
 # Video Prompting
 
+**[▶ Watch the Live Showcase →](https://gurneyk.github.io/Video-prompting/showcase-video.html)**
+*A 96-second animated video showing everything this kit can produce — 2D morphs, 3D CSS, kinetic type, glassmorphism, and more. Built with this exact toolkit.*
+
+---
+
 A practical prompting kit for making video ads, animated presentations, product demos, GIF loops, motion-design concepts, showreel segments, and HTML video teasers with AI tools such as Claude, Codex, ChatGPT, and other coding/design assistants.
 
 This repo is designed for two kinds of users:

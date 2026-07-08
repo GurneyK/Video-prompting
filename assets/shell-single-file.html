@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>HTML Video Teaser — single-file starter</title>
+
+<!-- React + Babel pinned. Re-derive integrity if you change versions. -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+        crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js"
+        crossorigin="anonymous"></script>
+
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #000; overflow: hidden; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #111; }
+  #app { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  .stage { position: relative; transform-origin: center; will-change: transform; }
+  .controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+              display: flex; gap: 12px; align-items: center;
+              background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+              padding: 8px 12px; border-radius: 999px; color: #fff;
+              font-size: 12px; z-index: 100; }
+  .controls button { background: none; border: 1px solid #fff3; color: #fff;
+                     padding: 4px 10px; border-radius: 999px; cursor: pointer; font-size: 12px; }
+  .controls input[type=range] { width: 200px; accent-color: #fff; }
+  @keyframes nx-blink { 50% { opacity: 0; } }
+
+  /* Fullscreen mode: hide controls + cursor for clean playback. Hovering the
+     bottom edge brings controls back. Required for screen-recording and demos. */
+  :fullscreen body, :-webkit-full-screen body { background: #000; cursor: none; }
+  :fullscreen .controls, :-webkit-full-screen .controls {
+    opacity: 0; pointer-events: none; transition: opacity 0.4s;
+  }
+  :fullscreen .controls:hover, :-webkit-full-screen .controls:hover {
+    opacity: 1; pointer-events: auto; cursor: default;
+  }
+  :fullscreen #app, :-webkit-full-screen #app { background: #000; }
+  .caret { display: inline-block; width: 2px; height: 1em; background: currentColor;
+           vertical-align: text-bottom; margin-left: 2px; animation: nx-blink 1s infinite; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<!-- Inlined assets (data URIs / inline SVG) go here. Set globals on window. -->
+<script>
+  // window.__RES_LOGO_SVG = "<svg ...>...</svg>";
+  // window.__RES_PATTERN_PNG = "data:image/png;base64,...";
+</script>
+
+<!-- 1) Primitives: Stage, Sprite, Layer, useTime, easing, interpolate, helpers -->
+<script type="text/babel" data-presets="react">
+const { useState, useRef, useEffect, useContext, createContext, useMemo } = React;
+
+const StageCtx  = createContext({ t: 0, duration: 1 });
+const SpriteCtx = createContext({ start: 0, end: 0, p: 0 });
+const useTime   = () => useContext(StageCtx).t;
+const useSprite = () => useContext(SpriteCtx).p;
+
+const clamp01 = p => Math.max(0, Math.min(1, p));
+const Easing = {
+  linear:    p => p,
+  in:        p => p * p,
+  out:       p => 1 - (1 - p) * (1 - p),
+  inOut:     p => p < 0.5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2) / 2,
+  inCubic:   p => p ** 3,
+  outCubic:  p => 1 - Math.pow(1 - p, 3),
+  inOutCubic:p => p < 0.5 ? 4 * p**3 : 1 - Math.pow(-2*p + 2, 3) / 2,
+  outBack:   p => { const c1 = 1.70158, c3 = c1 + 1;
+                    return 1 + c3 * Math.pow(p - 1, 3) + c1 * Math.pow(p - 1, 2); },
+  smooth:    p => p * p * p * (p * (6 * p - 15) + 10),
+};
+
+function interpolate(t, [i0, i1], [o0, o1], easing = Easing.linear) {
+  const p = clamp01((t - i0) / (i1 - i0));
+  return o0 + (o1 - o0) * easing(p);
+}
+function twLerp(a, b, p) {
+  if (Array.isArray(a)) return a.map((v, i) => v + (b[i] - v) * p);
+  return a + (b - a) * p;
+}
+function seq(now, stops, easing = Easing.smooth) {
+  if (now <= stops[0][0]) return stops[0][1];
+  if (now >= stops.at(-1)[0]) return stops.at(-1)[1];
+  for (let i = 0; i < stops.length - 1; i++) {
+    const [t0, v0, e] = stops[i];
+    const [t1, v1] = stops[i + 1];
+    if (now >= t0 && now < t1) {
+      const p = (now - t0) / (t1 - t0);
+      return twLerp(v0, v1, (e || easing)(p));
+    }
+  }
+  return stops.at(-1)[1];
+}
+function hold(now, stops) {
+  let v = stops[0][1];
+  for (const [t, val] of stops) if (now >= t) v = val; else break;
+  return v;
+}
+function envS(now, t0, t1, t2, t3) {
+  if (now <= t0) return 0;
+  if (now >= t3) return 0;
+  if (now < t1)  return Easing.smooth((now - t0) / (t1 - t0));
+  if (now < t2)  return 1;
+  return Easing.smooth(1 - (now - t2) / (t3 - t2));
+}
+
+function Stage({ duration, width = 1280, height = 720, children }) {
+  const [t, setT] = useState(0);
+  const tRef = useRef(0);
+  const lastRef = useRef(performance.now());
+  const playingRef = useRef(true);
+  const [scale, setScale] = useState(1);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    let raf;
+    const tick = (now) => {
+      const dt = Math.min((now - lastRef.current) / 1000, 0.05);
+      lastRef.current = now;
+      if (playingRef.current) {
+        const next = tRef.current + dt;
+        if (next >= duration) {
+          tRef.current = duration; setT(duration);
+          window.parent?.postMessage({ type: 'finished' }, '*');
+          return;
+        }
+        tRef.current = next; setT(next);
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [duration]);
+
+  useEffect(() => {
+    const onResize = () => setScale(Math.min(window.innerWidth / width, window.innerHeight / height));
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [width, height]);
+
+  const seek = (v) => { tRef.current = v; setT(v); };
+  const toggle = () => { playingRef.current = !playingRef.current; setPaused(!playingRef.current); };
+  const restart = () => { tRef.current = 0; setT(0); lastRef.current = performance.now(); playingRef.current = true; setPaused(false); };
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      const el = document.documentElement;
+      (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    }
+  };
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.code === 'Space') { e.preventDefault(); toggle(); }
+      else if (e.code === 'KeyR') { restart(); }
+      else if (e.code === 'KeyF') { toggleFullscreen(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  const embed = new URLSearchParams(location.search).get('embed') === '1';
+
+  return (
+    <>
+      <div className="stage" style={{ width, height, transform: `scale(${scale})` }}>
+        <StageCtx.Provider value={{ t, duration }}>{children}</StageCtx.Provider>
+      </div>
+      {!embed && (
+        <div className="controls">
+          <button onClick={toggle} title="Play / Pause (Space)">{paused ? '▶' : '❙❙'}</button>
+          <button onClick={restart} title="Restart (R)">↺</button>
+          <input type="range" min="0" max={duration} step="0.01"
+                 value={t} onChange={e => seek(+e.target.value)} />
+          <span>{t.toFixed(2)}s / {duration.toFixed(2)}s</span>
+          <button onClick={toggleFullscreen} title="Fullscreen (F)">⛶</button>
+        </div>
+      )}
+    </>
+  );
+}
+
+function Sprite({ start, end, children }) {
+  const { t } = useContext(StageCtx);
+  if (t < start || t > end) return null;
+  const p = clamp01((t - start) / (end - start));
+  return <SpriteCtx.Provider value={{ start, end, p }}>{children}</SpriteCtx.Provider>;
+}
+
+function Layer({ x = 0, y = 0, w, h, scale = 1, rotation = 0, opacity = 1, style, children }) {
+  return (
+    <div style={{
+      position: 'absolute', left: x, top: y,
+      width: w, height: h, opacity,
+      transform: `scale(${scale}) rotate(${rotation}deg)`,
+      transformOrigin: 'center', ...style,
+    }}>{children}</div>
+  );
+}
+
+Object.assign(window, {
+  Stage, Sprite, Layer, useTime, useSprite,
+  Easing, interpolate, twLerp, seq, hold, envS, clamp01,
+});
+</script>
+
+<!-- 2) Theme tokens -->
+<script type="text/babel" data-presets="react">
+window.THEME = {
+  // CUSTOMIZE: your palette goes here. These are starting points.
+  bg: { ivory: '#FAF9F5', oat: '#E3DACC', slate: '#141413', cactus: '#BCD1CA', heather: '#CBCADB' },
+  ink: { primary: 'rgba(15,12,8,0.92)', secondary: 'rgba(15,12,8,0.64)', muted: 'rgba(15,12,8,0.48)' },
+  accent: { primary: '#1F36C7' },
+  font: { sans: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          serif: 'Georgia, "Times New Roman", serif',
+          mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace' },
+};
+</script>
+
+<!-- 3) Faux-UI primitives (hand-built — REPLACE WITH YOUR OWN COMPONENTS) -->
+<script type="text/babel" data-presets="react">
+const { Layer, Easing, interpolate, useTime } = window;
+const T = window.THEME;
+
+function MiniBrowser({ url = 'example.com', children }) {
+  return (
+    <div style={{
+      width: '100%', height: '100%', background: '#fff',
+      borderRadius: 12, boxShadow: '0 8px 30px rgba(0,0,0,0.08)', overflow: 'hidden',
+      display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{
+        height: 32, background: '#F1F0EB', display: 'flex', alignItems: 'center',
+        gap: 6, padding: '0 12px', fontFamily: T.font.sans, fontSize: 11, color: T.ink.muted,
+      }}>
+        <div style={{ width: 10, height: 10, borderRadius: 99, background: '#FF5F57' }} />
+        <div style={{ width: 10, height: 10, borderRadius: 99, background: '#FEBC2E' }} />
+        <div style={{ width: 10, height: 10, borderRadius: 99, background: '#28C840' }} />
+        <div style={{
+          marginLeft: 16, padding: '4px 10px', background: '#fff',
+          borderRadius: 6, fontSize: 11, flex: 1, maxWidth: 320, textAlign: 'center',
+        }}>{url}</div>
+      </div>
+      <div style={{ flex: 1, padding: 24 }}>{children}</div>
+    </div>
+  );
+}
+
+function TypeText({ text, start, dur, style }) {
+  const t = useTime();
+  const p = Math.max(0, Math.min(1, (t - start) / dur));
+  const n = Math.floor(p * text.length);
+  const showCaret = t >= start && t < start + dur + 1.5;
+  return (
+    <span style={style}>
+      {text.slice(0, n)}
+      {showCaret && <span className="caret" />}
+    </span>
+  );
+}
+
+Object.assign(window, { MiniBrowser, TypeText });
+</script>
+
+<!-- 4) Scene 1 -->
+<script type="text/babel" data-presets="react">
+const { Layer, MiniBrowser, TypeText, Easing, interpolate, envS } = window;
+const T = window.THEME;
+
+function scene1Intro(t, t0, sceneDur) {
+  const lt = t - t0;
+  const opacity = envS(lt, 0, 0.4, sceneDur - 0.4, sceneDur);
+  return (
+    <Layer x={0} y={0} w={1280} h={720} opacity={opacity}>
+      <div style={{
+        position: 'absolute', inset: 0, display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        flexDirection: 'column', color: T.ink.primary, fontFamily: T.font.serif,
+      }}>
+        <div style={{ fontSize: 84, fontWeight: 400, letterSpacing: -1 }}>
+          <TypeText text="Meet Your Product" start={0.2} dur={1.2} />
+        </div>
+        <div style={{ marginTop: 24, fontSize: 22, color: T.ink.secondary, fontFamily: T.font.sans }}>
+          A short reveal in HTML. No video file required.
+        </div>
+      </div>
+    </Layer>
+  );
+}
+scene1Intro.dur = 4.0;
+window.scene1Intro = scene1Intro;
+</script>
+
+<!-- 5) App: scene cascade + mount -->
+<script type="text/babel" data-presets="react">
+const { Stage, Layer } = window;
+const SCENES = [window.scene1Intro];
+const SCENE_BG = [window.THEME.bg.oat];
+const PAD = 0.45;
+
+const durs   = SCENES.map(s => s.dur);
+const starts = durs.reduce((acc, d, i) => [...acc, (acc[i-1] ?? 0) + (durs[i-1] ?? 0)], []);
+const total  = starts.at(-1) + durs.at(-1);
+
+function App() {
+  return (
+    <Stage duration={total} width={1280} height={720}>
+      {/* background layers — replace with two-layer cross-fade for multi-scene */}
+      <Layer x={0} y={0} w={1280} h={720}
+             style={{ background: SCENE_BG[0], position: 'absolute', inset: 0, zIndex: 0 }} />
+      {SCENES.map((s, i) => (
+        <Layer key={i} x={0} y={0} w={1280} h={720} style={{ position: 'absolute', inset: 0 }}>
+          <SceneRender s={s} start={starts[i]} dur={durs[i]} />
+        </Layer>
+      ))}
+    </Stage>
+  );
+}
+
+function SceneRender({ s, start, dur }) {
+  const t = window.useTime();
+  if (t < start - PAD || t > start + dur + PAD) return null;
+  return s(t, start, dur);
+}
+
+ReactDOM.createRoot(document.getElementById('app')).render(<App />);
+</script>
+
+</body>
+</html>

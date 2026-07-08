@@ -1,0 +1,17 @@
+# Local working bundles and generated outputs
+uploads/*
+!uploads/README.md
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Video/build outputs
+*.mp4
+*.mov
+*.webm
+*.gif
+teaser.html
+dist/
+build/

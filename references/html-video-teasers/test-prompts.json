@@ -1,0 +1,132 @@
+{
+  "_meta": {
+    "purpose": "Behavioral test scenarios for the html-video-teasers skill. Run each prompt with the skill loaded and verify the agent meets the expected behaviors. These are not assertion code — they are a checklist for human review.",
+    "how_to_use": "For each scenario: (1) start a fresh Claude Code session, (2) paste the prompt verbatim, (3) compare the agent's output against the `expected[]` and `guardrails_tested[]` lists, (4) note any drift."
+  },
+  "scenarios": [
+    {
+      "id": "fresh-feature-teaser-mode-a",
+      "name": "Build a single-scene feature reveal teaser from scratch",
+      "prompt": "Make me a 12-second HTML video teaser for a new feature called 'Live Sync'. It should fade in a title, show a fake browser window with the feature animating once, then fade out. Single file, I'll send it via email.",
+      "expected": [
+        "Skill triggers automatically (description matches 'HTML video teaser', 'feature reveal', 'single file')",
+        "Picks Mode A (single-file Babel-standalone) — explains why based on scope",
+        "Storyboards the scene (or scenes) in plain English BEFORE writing JSX",
+        "Copies the shell-single-file.html starter, doesn't write the React+Babel CDN scaffolding from scratch",
+        "Uses Stage/Sprite/Layer + interpolate/Easing/envS — does NOT introduce GSAP, framer-motion, or @keyframes",
+        "Builds one scene end-to-end (with computeDur or .dur) before declaring done",
+        "Uses the phase-budget pattern (const P = {…}) inside the scene",
+        "Pacing respects the 60/40 hold rule (hold ≥ 1.5× the typing/entry duration)",
+        "Posts {type:'finished'} to parent and holds the last frame instead of looping",
+        "Runs through the verification checklist (or at least mentions opening in a browser)"
+      ],
+      "guardrails_tested": [
+        "No CSS @keyframes for animation (only the caret blink is allowed)",
+        "No setTimeout/setInterval/transition for timing",
+        "No vw/vh inside scenes — only stage pixels",
+        "No real <video>/<canvas>/WebGL"
+      ]
+    },
+    {
+      "id": "multi-scene-product-walkthrough-mode-b",
+      "name": "Storyboard a 6-scene product walkthrough and pick Mode B",
+      "prompt": "I want a 75-second HTML video walking through our product: intro, problem, our approach, the build flow, the deploy moment, outro. Five-ish scenes. Reference the Nexus demo for style.",
+      "expected": [
+        "Skill triggers (description matches 'HTML video', 'demo video', 'Nexus demo')",
+        "Reads the Nexus demo paths from demos/REFERENCES.md before writing anything",
+        "Picks Mode B (multi-file ESM + build.mjs) and explains why (>3 scenes, multi-author potential)",
+        "Storyboards all 5 scenes with names, story beats, target durations, and SCENE_BG colors",
+        "Lays out the src/ tree with numeric prefixes (00-99 + scenes/sN-…) AND copies the build.mjs starter",
+        "Builds ONE scene completely (incl. computeDur) before adding scene 2 — does not stub out all scenes simultaneously",
+        "Uses cross-fade between scenes (PAD ≈ 0.45s, FADE ≈ 0.8s background blend), not hard cuts",
+        "Total runtime stays in the 60–110s range; refuses or warns if asked to push past 120s without trimming",
+        "Suggests adding procedural Web Audio (whoosh 0.25s before scene boundaries) and explains the edge-trigger fire registry"
+      ],
+      "guardrails_tested": [
+        "Refuses to add per-scene RAF loops — only Stage owns the driver",
+        "Refuses to use `vw`/`vh` inside scenes — author at fixed 1440×810",
+        "All durations named in P = {…} or ctx.num — no inline magic numbers",
+        "Build script supports asset inlining (PNG/SVG/MP3 → window.__ASSET_*)"
+      ]
+    },
+    {
+      "id": "react-babel-trap-debugging",
+      "name": "Diagnose a 'React is not defined' error in an existing teaser",
+      "prompt": "My HTML teaser worked yesterday and now the browser console says 'React is not defined' on the first script that uses JSX. Nothing renders. Help me debug.",
+      "expected": [
+        "Reads references/react-babel-traps.md immediately",
+        "Walks through Trap 3 (integrity hash mismatch) and Trap 6 (load order) as the top two suspects",
+        "Asks to see the <script> tags from the file's <head>",
+        "Verifies React → ReactDOM → Babel order before any other suggestion",
+        "Re-derives or removes integrity hashes if version was changed",
+        "Suggests checking Network tab for a refused script (the fingerprint of an integrity mismatch)",
+        "Does NOT suggest 'reinstall React' or 'try a different React version' as the first move"
+      ],
+      "guardrails_tested": [
+        "Diagnoses by trap reference, not by guessing",
+        "No 'just delete the integrity attribute' as the only answer (that's a workaround, not a fix)"
+      ]
+    },
+    {
+      "id": "pacing-feedback-loop",
+      "name": "User says 'the video feels rushed and chaotic'",
+      "prompt": "I made a 90-second HTML video teaser following your skill but watching it back it feels rushed and chaotic. Help me fix the pacing.",
+      "expected": [
+        "Reads references/scenes-and-pacing.md",
+        "Asks what the per-scene durations are AND how much of each scene is hold vs motion",
+        "Diagnoses against the 60/40 rule for scenes ≥10s",
+        "Proposes specific fixes: longer holds after typing, stagger between elements ≥80ms, single-easing-register per scene, cross-fades not cuts",
+        "Suggests scrubbing to mid-scene and asking 'is this a poster?' as a quality check",
+        "Does NOT suggest cutting content to fit time — proposes extending durations or removing scenes wholesale instead",
+        "Mentions adding a whoosh SFX 0.25s before scene boundaries for kinetic punctuation"
+      ],
+      "guardrails_tested": [
+        "Holds are content, not pause — agent treats reading time as deliberate",
+        "Doesn't propose adding more transitions to fix 'feels too still'",
+        "Doesn't propose mixing easing curves to add variety"
+      ]
+    },
+    {
+      "id": "add-brand-wordmark-to-existing-video",
+      "name": "Wire a brand wordmark into an existing teaser",
+      "prompt": "I have an HTML video teaser already. I want to add my company's logo as a persistent watermark in the bottom-right of every scene, plus do an animated draw-in of the logo at the very end where it 'writes itself' on screen. The logo is a vector SVG.",
+      "expected": [
+        "Skill triggers (description matches 'add a logo to the video', 'wordmark draw-in', 'persistent corner logo')",
+        "Reads references/branding-and-logos.md before writing code",
+        "Asks for the logo SVG OR confirms it has multiple <path> elements (>=20 ideal for clean draw-in)",
+        "Walks through the asset prep step: tag each path with class=\"brand-p brand-<color>\" so the build can extract them generically",
+        "Updates build.mjs to parse the SVG into window.__BRAND_PATHS__ (or confirms the starter already does this)",
+        "Adds a Wordmark static component (renders all paths with their fill colors)",
+        "Adds a WordmarkDrawIn animated component using the rewind→redraw pattern with per-path stagger and pathLength=\"1000\"",
+        "Wires CornerLogo into Stage so it appears on every scene without per-scene boilerplate",
+        "Auto-fades the corner logo 6-7s before the outro draw-in begins (so the big version owns the frame)",
+        "Allocates ~5.5s of outro budget: text-blur-out + WordmarkDrawIn (3.4s) + tag",
+        "Sizes the corner logo at 100-120px (not larger), keeps it bottom-right, no animation on it"
+      ],
+      "guardrails_tested": [
+        "Doesn't recommend a flat PNG for the draw-in (vector required)",
+        "Doesn't put the corner logo in a top corner (looks like a watermark)",
+        "Doesn't animate the corner logo (it's ambient, not a feature)",
+        "Doesn't trigger the draw-in mid-video (it's a closer beat)",
+        "Doesn't pick brand colors itself — uses the colors encoded in the SVG paths"
+      ]
+    },
+    {
+      "id": "out-of-scope-request",
+      "name": "User asks the skill to design a brand identity",
+      "prompt": "Can you also pick a font pairing and a 5-color palette for the brand while you make this teaser?",
+      "expected": [
+        "Skill stays in scope: declines to dictate aesthetic direction",
+        "Says explicitly: 'this skill is technique-only — palette and typography are project decisions'",
+        "Either asks the user for the palette + fonts OR routes to the project's existing design system / DESIGN.md",
+        "Does NOT propose 'minimalist palette: #FAF9F5 / #1F36C7 / …' on its own",
+        "Suggests the user invoke a separate design skill (design-consultation, brand, etc.) for that work",
+        "Continues with the teaser using placeholder colors/fonts that the user can swap later"
+      ],
+      "guardrails_tested": [
+        "Skill aesthetic-agnosticism is honored under pressure",
+        "Agent does not take a design taste action just because it would 'help the user move faster'"
+      ]
+    }
+  ]
+}

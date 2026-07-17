@@ -1,6 +1,6 @@
 # Video Prompting
 
-**[▶ Watch the Live Showcase →](https://gurneyk.github.io/Video-prompting/showcase-video.html)**
+**[▶ Watch the Live Showcase →](https://gurneyk.github.io/Video-prompting/)**
 *A 96-second animated video showing everything this kit can produce — 2D morphs, 3D CSS, kinetic type, glassmorphism, and more. Built with this exact toolkit.*
 
 ---

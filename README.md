@@ -97,3 +97,7 @@ This repo includes a specialized pattern for making standalone HTML pages that b
 - For editability: use slides, Figma, or HTML teaser source.
 - For final playback everywhere: export MP4 or host the HTML teaser with GitHub Pages.
 - For team reuse: keep this repo as the source of prompting truth and link it from Teams/SharePoint.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Note: the `templates/company-styles/` reference docs describe third-party companies' *stylistic patterns* only; they don't grant rights to any company's actual logos, trademarks, or copyrighted material — see each file's disclaimer.

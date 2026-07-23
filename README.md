@@ -37,13 +37,33 @@ Video-prompting/
   AI_UPLOAD_PACKET.md              Upload this to AI first
   QUICK_START.md                   Fast path for any user
   VIDEO_PROMPTING_MASTER_GUIDE.md  Full strategy and workflow
+  USING_SKILLS_AND_COMMANDS.md     How to use/copy the .claude and .codex assets below
+  .claude/skills/                  Installable Claude Code skills (creative direction)
+  .claude/commands/                Installable Claude Code slash commands
+  .codex/prompts/                  Mirrored slash commands for Codex
   templates/                       Fill-in prompt templates
+  templates/company-styles/        Top-10 company style-DNA reference templates
   decision-guides/                 Choose format, tool, and workflow
   examples/                        Finished example prompts
   references/                      Motion, pacing, branding, QA
   assets/                          Starter code for HTML video teasers
   uploads/                         Suggested place for local AI upload bundles
 ```
+
+## Skills & Commands
+
+Beyond the upload-and-prompt workflow above, this repo ships installable Claude Code **skills** and **slash commands** (mirrored for Codex) so the same guidance is available directly inside your AI coding assistant — see [USING_SKILLS_AND_COMMANDS.md](USING_SKILLS_AND_COMMANDS.md) for full details.
+
+**Skills** (`.claude/skills/`, auto-triggered by request):
+- `creative-director` — audience framing, format choice, narrative shape (start here if the format isn't decided)
+- `product-demo-video` — product/feature demo pacing, cursor choreography, fake-data discipline
+- `presentation-motion` — animated decks: PowerPoint/Keynote/Google Slides, exec-deck editability
+- `brand-motion-system` — define or borrow a visual/motion identity, including the company-style templates below
+
+**Slash commands** (`.claude/commands/` + `.codex/prompts/`, type `/` to use):
+`/storyboard` `/loop-animation` `/add-sfx` `/add-music` `/scene-add` `/brand-check` `/company-style` `/creative-review`
+
+**Company style-DNA templates** (`templates/company-styles/`): Anthropic, Apple, SpaceX, Tesla, Samsung, Stripe, Linear, Nike, Airbnb, Figma — the pacing/color/motion/sound patterns behind each company's public launch content, for creative-direction inspiration only (never literal logo/asset reproduction — see the templates' own disclaimers and `/company-style`).
 
 ## The Golden Rule
 
